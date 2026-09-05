@@ -1,6 +1,7 @@
 import sys
 
 from security_toolkit.headers import check_security_headers
+from security_toolkit.tls import check_tls_certificate
 
 
 def main():
@@ -9,21 +10,34 @@ def main():
         sys.exit(1)
 
     url = sys.argv[1]
-    result = check_security_headers(url)
+
+    headers_result = check_security_headers(url)
+    tls_result = check_tls_certificate(url)
 
     print("\nSecurity Headers Report")
     print("=" * 40)
 
-    if "error" in result:
-        print(result["error"])
-        sys.exit(1)
+    if "error" in headers_result:
+        print(headers_result["error"])
+    else:
+        print(f"URL: {headers_result['url']}")
+        print(f"Status: {headers_result['status_code']}\n")
 
-    print(f"URL: {result['url']}")
-    print(f"Status: {result['status_code']}\n")
+        for header, data in headers_result["headers"].items():
+            status = "PRESENT" if data["present"] else "MISSING"
+            print(f"[{status}] {header}")
 
-    for header, data in result["headers"].items():
-        status = "PRESENT" if data["present"] else "MISSING"
-        print(f"[{status}] {header}")
+    print("\nTLS Certificate Report")
+    print("=" * 40)
+
+    if "error" in tls_result:
+        print(tls_result["error"])
+    else:
+        print(f"Hostname: {tls_result['hostname']}")
+        print(f"TLS Version: {tls_result['tls_version']}")
+        print(f"Cipher: {tls_result['cipher']}")
+        print(f"Valid from: {tls_result['not_before']}")
+        print(f"Valid until: {tls_result['not_after']}")
 
 
 if __name__ == "__main__":
