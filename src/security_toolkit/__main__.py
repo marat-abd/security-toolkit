@@ -2,6 +2,7 @@ import sys
 
 from security_toolkit.headers import check_security_headers
 from security_toolkit.tls import check_tls_certificate
+from security_toolkit.dns import lookup_dns
 
 
 def main():
@@ -10,6 +11,8 @@ def main():
         sys.exit(1)
 
     url = sys.argv[1]
+    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    dns_result = lookup_dns(hostname)
 
     headers_result = check_security_headers(url)
     tls_result = check_tls_certificate(url)
@@ -39,6 +42,15 @@ def main():
         print(f"Valid from: {tls_result['not_before']}")
         print(f"Valid until: {tls_result['not_after']}")
 
+    print("\nDNS Report")
+    print("=" * 40)
+
+    if "error" in dns_result:
+        print(dns_result["error"])
+    else:
+        print(f"Hostname: {dns_result['hostname']}")
+        print(f"IPv4: {', '.join(dns_result['ipv4']) or 'None'}")
+        print(f"IPv6: {', '.join(dns_result['ipv6']) or 'None'}")
 
 if __name__ == "__main__":
     main()
