@@ -1,9 +1,13 @@
 import sys
+import json
 
 from security_toolkit.headers import check_security_headers
 from security_toolkit.tls import check_tls_certificate
 from security_toolkit.dns import lookup_dns
 
+def save_json_report(result: dict, filename: str) -> None:
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(result, file, indent=2, ensure_ascii=False)
 
 def main():
     if len(sys.argv) != 2:
@@ -51,6 +55,15 @@ def main():
         print(f"Hostname: {dns_result['hostname']}")
         print(f"IPv4: {', '.join(dns_result['ipv4']) or 'None'}")
         print(f"IPv6: {', '.join(dns_result['ipv6']) or 'None'}")
+
+    report = {
+    "headers": headers_result,
+    "tls": tls_result,
+    "dns": dns_result,
+    }
+
+    save_json_report(report, "security_report.json")
+    print("\nJSON report saved to security_report.json")
 
 if __name__ == "__main__":
     main()
