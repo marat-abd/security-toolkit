@@ -30,6 +30,38 @@ The toolkit can be used for:
 * Linux
 * Git
 
+## Installation
+
+Clone the repository:
+
+    git clone git@github-marat:marat-abd/security-toolkit.git
+    cd security-toolkit
+
+Create a virtual environment:
+
+    python3 -m venv .venv
+    source .venv/bin/activate
+
+Install the project:
+
+    pip install -e .
+
+## Usage
+
+Run a security assessment:
+
+    python -m security_toolkit example.com
+
+The toolkit checks:
+
+- HTTP security headers
+- TLS certificate information
+- DNS records
+
+A JSON report is saved as:
+
+    security_report.json
+
 ## Project Status
 
 🚧 Work in progress
