@@ -25,6 +25,12 @@ def main():
         help="JSON report filename"
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="security-toolkit 0.1.0"
+    )
+
     args = parser.parse_args()
 
     url = args.url
