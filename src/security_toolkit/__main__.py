@@ -1,4 +1,4 @@
-import sys
+import argparse
 import json
 
 from security_toolkit.headers import check_security_headers
@@ -10,11 +10,24 @@ def save_json_report(result: dict, filename: str) -> None:
         json.dump(result, file, indent=2, ensure_ascii=False)
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python -m security_toolkit <URL>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Basic security assessment toolkit"
+    )
 
-    url = sys.argv[1]
+    parser.add_argument(
+        "url",
+        help="Target URL or hostname"
+    )
+
+    parser.add_argument(
+        "--json",
+        default="security_report.json",
+        help="JSON report filename"
+    )
+
+    args = parser.parse_args()
+
+    url = args.url
     hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
     dns_result = lookup_dns(hostname)
 
@@ -62,8 +75,8 @@ def main():
     "dns": dns_result,
     }
 
-    save_json_report(report, "security_report.json")
-    print("\nJSON report saved to security_report.json")
+    save_json_report(report, args.json)
+    print(f"\nJSON report saved to {args.json}")
 
 if __name__ == "__main__":
     main()
