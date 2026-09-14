@@ -1,5 +1,6 @@
 import argparse
 import json
+from urllib.parse import urlparse
 
 from security_toolkit.headers import check_security_headers
 from security_toolkit.tls import check_tls_certificate
@@ -13,7 +14,7 @@ def run_assessment(url: str) -> dict:
     headers_result = check_security_headers(url)
     tls_result = check_tls_certificate(url)
 
-    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    hostname = urlparse(url if "://" in url else f"https://{url}").hostname
     dns_result = lookup_dns(hostname)
 
     return {
