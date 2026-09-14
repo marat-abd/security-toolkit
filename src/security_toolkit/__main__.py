@@ -9,6 +9,19 @@ def save_json_report(result: dict, filename: str) -> None:
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(result, file, indent=2, ensure_ascii=False)
 
+def run_assessment(url: str) -> dict:
+    headers_result = check_security_headers(url)
+    tls_result = check_tls_certificate(url)
+
+    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    dns_result = lookup_dns(hostname)
+
+    return {
+        "headers": headers_result,
+        "tls": tls_result,
+        "dns": dns_result,
+    }
+
 def main():
     parser = argparse.ArgumentParser(
         description="Basic security assessment toolkit"
@@ -34,11 +47,12 @@ def main():
     args = parser.parse_args()
 
     url = args.url
-    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
-    dns_result = lookup_dns(hostname)
 
-    headers_result = check_security_headers(url)
-    tls_result = check_tls_certificate(url)
+    report = run_assessment(url)
+
+    headers_result = report["headers"]
+    tls_result = report["tls"]
+    dns_result = report["dns"]
 
     print("\nSecurity Headers Report")
     print("=" * 40)
@@ -74,12 +88,6 @@ def main():
         print(f"Hostname: {dns_result['hostname']}")
         print(f"IPv4: {', '.join(dns_result['ipv4']) or 'None'}")
         print(f"IPv6: {', '.join(dns_result['ipv6']) or 'None'}")
-
-    report = {
-    "headers": headers_result,
-    "tls": tls_result,
-    "dns": dns_result,
-    }
 
     save_json_report(report, args.json)
     print(f"\nJSON report saved to {args.json}")
