@@ -6,6 +6,8 @@ from security_toolkit.headers import check_security_headers
 from security_toolkit.tls import check_tls_certificate
 from security_toolkit.dns import lookup_dns
 
+from security_toolkit.score import calculate_security_score
+
 def save_json_report(result: dict, filename: str) -> None:
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(result, file, indent=2, ensure_ascii=False)
@@ -17,10 +19,13 @@ def run_assessment(url: str) -> dict:
     hostname = urlparse(url if "://" in url else f"https://{url}").hostname
     dns_result = lookup_dns(hostname)
 
+    score_result = calculate_security_score(headers_result)
+
     return {
         "headers": headers_result,
         "tls": tls_result,
         "dns": dns_result,
+        "score": score_result,
     }
 
 def main():
@@ -54,6 +59,14 @@ def main():
     headers_result = report["headers"]
     tls_result = report["tls"]
     dns_result = report["dns"]
+    score_result = report["score"]
+
+    print("\nSecurity Score")
+    print("=" * 40)
+    print(
+        f"Score: {score_result['score']}/{score_result['max_score']} "
+        f"({score_result['percentage']}%)"
+    )
 
     print("\nSecurity Headers Report")
     print("=" * 40)
