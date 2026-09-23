@@ -58,6 +58,14 @@ The toolkit checks:
 - TLS certificate information
 - DNS records
 
+The toolkit also calculates a simple security score based on the presence of common HTTP security headers.
+
+Example:
+
+    Security Score
+    ========================================
+    Score: 4/6 (67%)
+
 A JSON report is saved as:
 
     security_report.json
