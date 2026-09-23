@@ -18,3 +18,4 @@ def test_calculate_security_score():
     assert result["score"] == 4
     assert result["max_score"] == 6
     assert result["percentage"] == 67
+    assert result["level"] == "HIGH"

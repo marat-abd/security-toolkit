@@ -6,6 +6,7 @@ def calculate_security_score(headers_result: dict) -> dict:
             "score": 0,
             "max_score": 0,
             "percentage": 0,
+            "level": "UNKNOWN",
         }
 
     headers = headers_result.get("headers", {})
@@ -19,8 +20,16 @@ def calculate_security_score(headers_result: dict) -> dict:
     max_score = len(headers)
     percentage = round((score / max_score) * 100) if max_score else 0
 
+    if percentage <= 33:
+        level = "LOW"
+    elif percentage <= 66:
+        level = "MEDIUM"
+    else:
+        level = "HIGH"
+
     return {
         "score": score,
         "max_score": max_score,
         "percentage": percentage,
+        "level": level,
     }
