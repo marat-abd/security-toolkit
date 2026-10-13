@@ -67,6 +67,7 @@ def main():
         f"Score: {score_result['score']}/{score_result['max_score']} "
         f"({score_result['percentage']}%)"
     )
+    print(f"Level: {score_result['level']}")
 
     print("\nSecurity Headers Report")
     print("=" * 40)
