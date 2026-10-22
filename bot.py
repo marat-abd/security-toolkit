@@ -1,6 +1,9 @@
 
 import os
 import logging
+from urllib.parse import urlparse
+import re
+import time
 
 from telegram import Update
 from telegram.ext import (
@@ -33,6 +36,39 @@ async def check_site(
     from security_toolkit.__main__ import run_assessment
 
     target = update.message.text.strip()
+
+    if len(target) > 253:
+        await update.message.reply_text(
+            "Адрес слишком длинный. Отправь домен до 253 символов."
+        )
+        return
+
+    url = target if "://" in target else f"https://{target}"
+    parsed = urlparse(url)
+
+    if (
+        parsed.scheme not in ("http", "https")
+        or not parsed.hostname
+        or not re.fullmatch(r"[A-Za-z0-9.-]+", parsed.hostname)
+        or "." not in parsed.hostname
+    ):
+        await update.message.reply_text(
+            "Некорректный адрес. Пример: example.com"
+        )
+        return
+
+    target = url
+
+    now = time.monotonic()
+    last_check = context.user_data.get("last_check", 0)
+
+    if last_check and now - last_check < 30:
+        await update.message.reply_text(
+            "Подожди 30 секунд перед следующей проверкой."
+        )
+        return
+
+    context.user_data["last_check"] = now
 
     if not target or " " in target:
         await update.message.reply_text(
