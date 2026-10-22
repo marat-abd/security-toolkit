@@ -3,6 +3,8 @@ import os
 import logging
 from urllib.parse import urlparse
 import re
+import ipaddress
+import socket
 import time
 
 from telegram import Update
@@ -16,6 +18,20 @@ from telegram.ext import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def is_public_host(hostname):
+    try:
+        addresses = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        return False
+
+    for address in addresses:
+        ip = ipaddress.ip_address(address[4][0])
+        if not ip.is_global:
+            return False
+
+    return bool(addresses)
 
 
 async def start(
@@ -58,6 +74,13 @@ async def check_site(
         return
 
     target = url
+
+    if not is_public_host(parsed.hostname):
+        await update.message.reply_text(
+            "Этот адрес недоступен для проверки: "
+            "разрешены только публичные IP-адреса."
+        )
+        return
 
     now = time.monotonic()
     last_check = context.user_data.get("last_check", 0)
