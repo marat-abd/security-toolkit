@@ -82,7 +82,15 @@ async def check_site(
     )
 
     try:
-        result = run_assessment(target)
+        try:
+            result = run_assessment(target)
+        except Exception:
+            logger.exception("Ошибка при проверке сайта")
+            await update.message.reply_text(
+                "Не удалось проверить сайт. Попробуй позже."
+            )
+            return
+
 
         score = result["score"]
         headers = result["headers"]
