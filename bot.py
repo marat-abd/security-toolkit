@@ -22,16 +22,23 @@ logger = logging.getLogger(__name__)
 
 def is_public_host(hostname):
     try:
-        addresses = socket.getaddrinfo(hostname, None)
-    except socket.gaierror:
-        return False
-
-    for address in addresses:
-        ip = ipaddress.ip_address(address[4][0])
-        if not ip.is_global:
+        addresses = socket.getaddrinfo(
+            hostname,
+            None,
+            type=socket.SOCK_STREAM,
+        )
+        if not addresses:
             return False
 
-    return bool(addresses)
+        for address in addresses:
+            ip = ipaddress.ip_address(address[4][0])
+            if not ip.is_global:
+                return False
+
+        return True
+
+    except (socket.gaierror, ValueError, OSError):
+        return False
 
 
 async def start(

@@ -27,3 +27,21 @@ def test_blocks_private_ip(monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
 
     assert is_public_host("internal.example") is False
+
+
+def test_blocks_invalid_ip_response(monkeypatch):
+    def fake_getaddrinfo(*args, **kwargs):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "",
+             ("invalid-ip", 0))
+        ]
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+
+    assert is_public_host("example.com") is False
+
+
+def test_blocks_empty_dns_response(monkeypatch):
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *args, **kwargs: [])
+
+    assert is_public_host("example.com") is False
