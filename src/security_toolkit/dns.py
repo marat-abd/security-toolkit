@@ -1,45 +1,28 @@
-import socket
 
-
-def lookup_dns(hostname: str) -> dict:
-    """Get basic DNS information for a hostname."""
+def lookup_dns(hostname: str, addresses: list[str] | None = None) -> dict:
+    """Get DNS information from supplied, pre-resolved addresses."""
 
     hostname = hostname.strip()
 
     if not hostname:
         return {"hostname": hostname, "error": "Hostname is empty"}
 
-    try:
-        addresses = socket.getaddrinfo(
-            hostname,
-            None,
-            type=socket.SOCK_STREAM,
-        )
-
-        ipv4_addresses = sorted(
-            {
-                address[4][0]
-                for address in addresses
-                if "." in address[4][0]
-            }
-        )
-
-        ipv6_addresses = sorted(
-            {
-                address[4][0]
-                for address in addresses
-                if ":" in address[4][0]
-            }
-        )
-
+    if addresses is None:
         return {
             "hostname": hostname,
-            "ipv4": ipv4_addresses,
-            "ipv6": ipv6_addresses,
+            "error": "Resolved IP addresses are required",
         }
 
-    except socket.gaierror as error:
-        return {
-            "hostname": hostname,
-            "error": f"DNS lookup failed: {error}",
-        }
+    ipv4_addresses = sorted({
+        ip for ip in addresses if "." in ip
+    })
+
+    ipv6_addresses = sorted({
+        ip for ip in addresses if ":" in ip
+    })
+
+    return {
+        "hostname": hostname,
+        "ipv4": ipv4_addresses,
+        "ipv6": ipv6_addresses,
+    }

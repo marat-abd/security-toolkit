@@ -1,11 +1,13 @@
+
 from security_toolkit.dns import lookup_dns
 
 
 def test_lookup_dns():
-    result = lookup_dns("example.com")
+    result = lookup_dns(
+        "example.com",
+        ["93.184.216.34", "2606:2800:220:1:248:1893:25c8:1946"],
+    )
 
     assert result["hostname"] == "example.com"
-    assert "ipv4" in result
-    assert "ipv6" in result
-    assert isinstance(result["ipv4"], list)
-    assert isinstance(result["ipv6"], list)
+    assert result["ipv4"] == ["93.184.216.34"]
+    assert result["ipv6"] == ["2606:2800:220:1:248:1893:25c8:1946"]

@@ -8,16 +8,24 @@ from security_toolkit.dns import lookup_dns
 
 from security_toolkit.score import calculate_security_score
 
+from security_toolkit.network import resolve_public_ips
+
 def save_json_report(result: dict, filename: str) -> None:
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(result, file, indent=2, ensure_ascii=False)
 
 def run_assessment(url: str) -> dict:
-    headers_result = check_security_headers(url)
-    tls_result = check_tls_certificate(url)
+    normalized_url = url if "://" in url else f"https://{url}"
+    hostname = urlparse(normalized_url).hostname
 
-    hostname = urlparse(url if "://" in url else f"https://{url}").hostname
-    dns_result = lookup_dns(hostname)
+    if not hostname:
+        raise ValueError("Invalid URL: hostname not found")
+
+    ips = resolve_public_ips(hostname)
+
+    headers_result = check_security_headers(normalized_url, ips)
+    tls_result = check_tls_certificate(normalized_url, ips)
+    dns_result = lookup_dns(hostname, ips)
 
     score_result = calculate_security_score(headers_result)
 

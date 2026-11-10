@@ -1,5 +1,8 @@
-from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
+import http.client
+import ipaddress
+import socket
+import ssl
+from urllib.parse import urlparse
 
 
 SECURITY_HEADERS = {
@@ -12,20 +15,109 @@ SECURITY_HEADERS = {
 }
 
 
-def check_security_headers(url: str) -> dict:
-    """Check whether common HTTP security headers are present."""
+class PinnedHTTPConnection(http.client.HTTPConnection):
+    """HTTP connection that connects directly to a validated IP."""
+
+    def __init__(self, hostname, ip, port, timeout=10):
+        super().__init__(hostname, port=port, timeout=timeout)
+        self.ip = ip
+
+    def connect(self):
+        self.sock = socket.create_connection(
+            (self.ip, self.port),
+            self.timeout,
+        )
+
+
+class PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS connection that connects to a validated IP using the original hostname."""
+
+    def __init__(self, hostname, ip, port, timeout=10):
+        super().__init__(
+            hostname,
+            port=port,
+            timeout=timeout,
+            context=ssl.create_default_context(),
+        )
+        self.ip = ip
+
+    def connect(self):
+        sock = socket.create_connection(
+            (self.ip, self.port),
+            self.timeout,
+        )
+        self.sock = self._context.wrap_socket(
+            sock,
+            server_hostname=self.host,
+        )
+
+
+def check_security_headers(url: str, ips: list[str] | None = None) -> dict:
+    """Check HTTP security headers using pre-validated IP addresses."""
 
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
 
-    request = Request(
-        url,
-        headers={"User-Agent": "SecurityToolkit/1.0"},
-        method="GET",
-    )
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if parsed.scheme not in ("http", "https") or not hostname:
+        return {"url": url, "error": "Invalid URL"}
+
+    if parsed.username or parsed.password:
+        return {"url": url, "error": "Credentials in URL are not allowed"}
+
+    if not ips:
+        return {
+            "url": url,
+            "error": "Validated IP addresses are required",
+        }
 
     try:
-        with urlopen(request, timeout=10) as response:
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
+        for ip in ips:
+            address = ipaddress.ip_address(ip)
+            if not address.is_global:
+                return {
+                    "url": url,
+                    "error": "Non-public IP address rejected",
+                }
+
+        path = parsed.path or "/"
+        if parsed.query:
+            path += "?" + parsed.query
+
+        host_header = f"[{hostname}]" if ":" in hostname else hostname
+        default_port = 443 if parsed.scheme == "https" else 80
+
+        if port != default_port:
+            host_header += f":{port}"
+
+    except ValueError as error:
+        return {"url": url, "error": f"Invalid URL or IP: {error}"}
+
+    errors = []
+
+    for ip in ips:
+        connection = None
+
+        try:
+            if parsed.scheme == "https":
+                connection = PinnedHTTPSConnection(hostname, ip, port)
+            else:
+                connection = PinnedHTTPConnection(hostname, ip, port)
+
+            connection.request(
+                "GET",
+                path,
+                headers={
+                    "Host": host_header,
+                    "User-Agent": "SecurityToolkit/1.0",
+                },
+            )
+
+            response = connection.getresponse()
             headers = response.headers
 
             result = {
@@ -42,36 +134,19 @@ def check_security_headers(url: str) -> dict:
                 "headers": result,
             }
 
-    except HTTPError as error:
-        return {
-            "url": url,
-            "error": f"HTTP error: {error.code}",
-        }
+        except (OSError, ssl.SSLError, http.client.HTTPException) as error:
+            errors.append(f"{ip}: {error}")
 
-    except URLError as error:
-        return {
-            "url": url,
-            "error": f"Connection error: {error.reason}",
-        }
+        finally:
+            if connection is not None:
+                connection.close()
+
+    return {
+        "url": url,
+        "error": "Connection failed: " + "; ".join(errors),
+    }
 
 
 if __name__ == "__main__":
     target = input("Enter URL: ").strip()
-
-    result = check_security_headers(target)
-
-    print("\nSecurity Headers Report")
-    print("=" * 40)
-
-    if "error" in result:
-        print(result["error"])
-    else:
-        print(f"URL: {result['url']}")
-        print(f"Status: {result['status_code']}\n")
-
-        for header, data in result["headers"].items():
-            status = "PRESENT" if data["present"] else "MISSING"
-            print(f"[{status}] {header}")
-
-            if data["value"]:
-                print(f"  Value: {data['value']}")
+    print("Run this module through the main assessment so IP validation is performed.")
