@@ -1,5 +1,5 @@
-
 import socket
+import pytest
 
 from bot import is_public_host
 from security_toolkit.network import resolve_public_ips
@@ -68,21 +68,15 @@ def test_rejects_private_ip(monkeypatch):
 
     monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
 
-    try:
+    with pytest.raises(ValueError):
         resolve_public_ips("internal.example")
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
 
 
 def test_rejects_empty_dns_response(monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", lambda *args, **kwargs: [])
 
-    try:
+    with pytest.raises(ValueError):
         resolve_public_ips("example.com")
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
 
 
 def test_accepts_multiple_public_ips(monkeypatch):
@@ -113,8 +107,5 @@ def test_rejects_mixed_public_and_private_ips(monkeypatch):
 
     monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
 
-    try:
+    with pytest.raises(ValueError):
         resolve_public_ips("example.com")
-        assert False, "Expected ValueError"
-    except ValueError:
-        pass
